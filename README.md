@@ -19,7 +19,7 @@ TODO
     * Figure out if dropout is needed or not
 * Decide on a Faster-RCNN implementation to rip off
 * Decide if RNN is actually a viable path (include recurrent aspects in vgg or resnet)
-
+* Look into grayscale conversion
 
 
 
