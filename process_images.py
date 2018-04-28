@@ -74,4 +74,4 @@ for i in range(10000):
 	im = Image.open(image_file)
 	test_images[i] = pil_to_tensor(make_gray(im)).squeeze(0)
 
-torch.save(test_images, test_images_path) # save the tensor, note that dim=0 is the label
+torch.save(test_images, test_images_path) # save the tensor
