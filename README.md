@@ -22,7 +22,7 @@ TODO
     * Another we've been considering: https://github.com/jwyang/faster-rcnn.pytorch
 * Decide if RNN is actually a viable path (include recurrent aspects in vgg or resnet)
 * Look into grayscale conversion
-
+* Determine how to handle example images that are 1-D.
 
 
 Notes
@@ -42,3 +42,6 @@ stride=2 -> divide by 2, kernel size=7 -> subtract (7-1)/2=3
 note: in minivgg modify convolutions to have zero padding to keep dimenesionality.
 
 For creating own dataset, and for creating torch tensor from PIL image, use torchvision.transforms stuff.
+
+For viewing rgb images, matplotlib expects MxNx3 input. 
+Example: image is saved as 3x64x64 tensor. Matplotlib requires plt.imshow(image.permute(1,2,0).numpy()) (and followed by plt.show()) to view the image.
