@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
 class MiniBlock(nn.Module):
     def __init__(self, in_channels=10, num_channels=10, out_channels=10, kernel_size=5, stride=1):
         super(MiniBlock, self).__init__()
@@ -20,8 +19,6 @@ class MiniBlock(nn.Module):
         x = self.bn2(self.conv2(x))
         x += residual
         return F.relu(x)
-
-
 
 class MiniRes(nn.Module):
     def __init__(self):

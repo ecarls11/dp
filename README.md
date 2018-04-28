@@ -18,6 +18,8 @@ TODO
 * <s>Implement tiny resnet.</s>
     * Figure out if dropout is needed or not
 * Decide on a Faster-RCNN implementation to rip off
+    * One possible Faster-RCNN: https://github.com/chenyuntc/simple-faster-rcnn-pytorch/tree/master/model
+    * Another we've been considering: https://github.com/jwyang/faster-rcnn.pytorch
 * Decide if RNN is actually a viable path (include recurrent aspects in vgg or resnet)
 * Look into grayscale conversion
 

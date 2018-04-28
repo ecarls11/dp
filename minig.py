@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 class MiniG(nn.Module):
     def __init__(self):
-        super(MiniGG, self).__init__()
+        super(MiniG, self).__init__()
         self.conv1 = nn.Conv2d(1, 16, kernel_size=5)
         self.conv2 = nn.Conv2d(16, 16, kernel_size=5)
         self.bn1 = nn.BatchNorm2d(16)
