@@ -171,51 +171,46 @@ def main():
         }, is_best)
 
 
-class MiniGG(nn.Module):
+
+class MiniBlock(nn.Module):
+    def __init__(self, in_channels=10, num_channels=10, out_channels=10, kernel_size=5, stride=1):
+        super(MiniBlock, self).__init__()
+        # might or might not need stride
+        self.conv1 = nn.Conv2d(in_channels, num_channels, kernel_size=kernel_size, stride=stride, padding=(kernel_size-1)/2)
+        self.bn1 = nn.BatchNorm2d(num_channels)
+        self.conv2 = nn.Conv2d(num_channels, out_channels, kernel_size=kernel_size, padding=(kernel_size-1)/2)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+    def forward(self, x):
+        residual = x
+        x = self.conv1(x)
+        x = F.relu(self.bn1(x))
+        x = self.bn2(self.conv2(x))
+        x += residual
+        return F.relu(x)
+
+
+
+class MiniRes(nn.Module):
     def __init__(self):
-        super(MiniGG, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=5)
-        self.conv2 = nn.Conv2d(16, 16, kernel_size=5)
-        self.bn1 = nn.BatchNorm2d(16)
-
-        self.conv3 = nn.Conv2d(16, 32, kernel_size=5)
-        self.conv4 = nn.Conv2d(32, 32, kernel_size=5)
-        self.bn2 = nn.BatchNorm2d(32)
-
-        self.conv5 = nn.Conv2d(32, 64, kernel_size=5)
-        self.conv6 = nn.Conv2d(64, 64, kernel_size=5)
-        self.bn3 = nn.BatchNorm2d(64)
-
-        self.fc1 = nn.Linear(12544, 1024)
-        self.bnfc1 = nn.BatchNorm2d(1024)
-        self.fc2 = nn.Linear(1024, 1024)
-        self.bnfc2 = nn.BatchNorm2d(1024)
-        self.fc3 = nn.Linear(1024, 200)
+        super(MiniRes, self).__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=7, stride=2)
+        self.block1 = MiniBlock(16, 16, 16, kernel_size=3, stride=1)
+        self.block2 = MiniBlock(16, 16, 32, kernel_size=3, stride=1)
+        self.block3 = MiniBlock(32, 32, 64, kernel_size=3, stride=2)
+        self.block4 = MiniBlock(64, 64, 64, kernel_size=3, stride=2) # output is 64x8x8
+        self.fc1 = nn.Linear(1024, 1000)
+        
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.bn1(x)
-        x = F.dropout(x, training=self.training)
-
-        x = F.relu(self.conv3(x))
-        x = F.relu(self.conv4(x))
-        x = self.bn2(x)
-        x = F.dropout(x, training=self.training)
-
-        x = F.relu(self.conv5(x))
-        x = F.relu(self.conv6(x))
-        x = self.bn3(x)
-        x = F.dropout(x, training=self.training)
-
-        x = x.view(-1, 12544)
-        x = F.relu(self.fc1(x))
-        x = self.bnfc1(x)
-        x = F.dropout(x, training=self.training)
-        x = F.relu(self.fc2(x))
-        x = self.bnfc2(x)
-        x = F.dropout(x, training=self.training)
-        x = self.fc3(x)
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = F.avg_pool2d(x, kernel_size=2)
+        #x = x.view(-1, 1024)
+        x = self.fc1(x)
         return F.log_softmax(x, dim=1)
 
 
