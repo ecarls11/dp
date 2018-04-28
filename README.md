@@ -38,3 +38,5 @@ stride=2 -> divide by 2, kernel size=7 -> subtract (7-1)/2=3
 64x64 -> 29x29
 
 note: in minivgg modify convolutions to have zero padding to keep dimenesionality.
+
+For creating own dataset, and for creating torch tensor from PIL image, use torchvision.transforms stuff.
