@@ -112,7 +112,7 @@ class MiniGRoIHead(nn.Module):
         # n_class includes the background
         super(MiniGRoIHead, self).__init__()
 
-        self.classifier = forward()#classifier
+        self.classifier = classifier
         self.cls_loc = nn.Linear(4096, n_class * 4)
         self.score = nn.Linear(4096, n_class)
 
