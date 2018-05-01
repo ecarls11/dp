@@ -7,22 +7,24 @@ from model.roi_module import RoIPooling2D
 from utils import array_tool as at
 from utils.config import opt
 from dp.minig import MiniG
-###my comments have 3 #'s in front 
+
+###av's comments have 3 #'s in front 
+###this stands in for faster_rcnn_vgg16.py from original chenyuntc implementation
 
 def decom_minig():
+###none of this will work with minig because it isn't a builtin pytorch model
     # the 30th layer of features is relu of conv5_3
     '''
     if opt.caffe_pretrain:
         model = MiniG() ###(pretrained=False)
 
-        ###load state dict--we should make an analog to this 
         if not opt.load_path:
             model.load_state_dict(t.load(opt.caffe_pretrain_path))
     else:
         model = MiniG(not opt.load_path)
 
     features = list(model.features)[:30]
-    '''
+
     classifier = model.classifier
 
     classifier = list(classifier)
@@ -38,8 +40,10 @@ def decom_minig():
             p.requires_grad = False
 
     return nn.Sequential(*features), classifier
-
-
+    '''
+    model = MiniG()
+    features = list(model.features)[:30] ###take this from the tensor output? 
+    return nn.Sequential(*features), classifier
 class FasterRCNNMiniG(FasterRCNN):
     """Faster R-CNN based on VGG-16.
     For descriptions on the interface of this model, please refer to
@@ -101,12 +105,14 @@ class MiniGRoIHead(nn.Module):
         classifier (nn.Module): Two layer Linear ported from vgg16
     """
 
+    ###see http://pytorch.org/docs/0.3.0/_modules/torchvision/models/vgg.html to see how classifier is defined
+    ###classifier is used the way we use forward 
     def __init__(self, n_class, roi_size, spatial_scale,
                  classifier):
         # n_class includes the background
         super(MiniGRoIHead, self).__init__()
 
-        self.classifier = classifier
+        self.classifier = forward()#classifier
         self.cls_loc = nn.Linear(4096, n_class * 4)
         self.score = nn.Linear(4096, n_class)
 
