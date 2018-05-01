@@ -10,7 +10,7 @@ Writeup: <b>May 5th</b>
 TODO
 ======
 
-* Build a bullshit midterm report
+* <s>Build a bullshit midterm report</s>
 
 
 * Read in image net data as grayscale.
