@@ -23,16 +23,6 @@ class MiniG(nn.Module):
         self.fc2 = nn.Linear(1024, 1024)
         self.bnfc2 = nn.BatchNorm2d(1024)
         self.fc3 = nn.Linear(1024, 200)
-        ###to match structure of http://pytorch.org/docs/0.3.0/_modules/torchvision/models/vgg.html
-        self.classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, num_classes),
-        )
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
