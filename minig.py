@@ -48,8 +48,6 @@ class MiniG(nn.Module):
         x = self.bnfc2(x)
         x = F.dropout(x, training=self.training)
         x = self.fc3(x)
-        ###to match structure of http://pytorch.org/docs/0.3.0/_modules/torchvision/models/vgg.html
-        x = self.classifier(x)
         
         return F.log_softmax(x, dim=1)
     
