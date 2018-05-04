@@ -8,15 +8,15 @@ class MiniBlock(nn.Module):
         super(MiniBlock, self).__init__()
         # might or might not need stride
         self.conv1 = nn.Conv2d(in_channels, num_channels, kernel_size=kernel_size, stride=stride, padding=(kernel_size-1)/2)
-        self.bn1 = nn.BatchNorm2d(num_channels)
+        # self.bn1 = nn.BatchNorm2d(num_channels)
         self.conv2 = nn.Conv2d(num_channels, out_channels, kernel_size=kernel_size, padding=(kernel_size-1)/2)
-        self.bn2 = nn.BatchNorm2d(out_channels)
+        # self.bn2 = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         residual = x
         x = self.conv1(x)
-        x = F.relu(self.bn1(x))
-        x = self.bn2(self.conv2(x))
+        x = F.relu(x)
+        x = self.conv2(x)
         x += residual
         return F.relu(x)
 

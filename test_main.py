@@ -13,12 +13,10 @@ import torchvision
 from torchvision import datasets
 from torchvision import transforms
 from torch.autograd import Variable
-from tqdm import tqdm
 
 import numpy as np
-
-from tensorboardX import SummaryWriter
-import callbacks
+import sys
+# import callbacks
 
 import minires
 import minig
@@ -105,72 +103,11 @@ def timeStamped(fname, fmt='%Y-%m-%d-%H-%M-%S_{fname}'):
 
 
 def prepareDatasetAndLogging(args):
-    # choose the dataset
-    if args.dataset == 'mnist':
-        DatasetClass = datasets.MNIST
-    elif args.dataset == 'fashion_mnist':
-        DatasetClass = datasets.FashionMNIST
-    elif args.dataset == 'imagenet':
-        pass
-    else:
-        tail_string = ' try mnist or fashion_mnist'
-        raise ValueError('unknown dataset: ' + args.dataset + tail_string)
-
-    training_run_name = timeStamped(args.dataset + '_' + args.name)
-
-    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-
-    # Create the dataset, mnist or fasion_mnist
-    dataset_dir = os.path.join(args.data_dir, args.dataset)
-    training_run_dir = os.path.join(args.data_dir, training_run_name)
-    train_dataset = DatasetClass(
-        dataset_dir, train=True, download=True,
-        transform=transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ]))
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
-    test_dataset = DatasetClass(
-        dataset_dir, train=False, transform=transforms.Compose([
-                        transforms.ToTensor(),
-                        transforms.Normalize((0.1307,), (0.3081,))
-                     ]))
-    test_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=args.test_batch_size, shuffle=True, **kwargs)
-
-    # Set up visualization and progress status update code
-    callback_params = {'epochs': args.epochs,
-                       'samples': len(train_loader) * args.batch_size,
-                       'steps': len(train_loader),
-                       'metrics': {'acc': np.array([]),
-                                   'loss': np.array([]),
-                                   'val_acc': np.array([]),
-                                   'val_loss': np.array([])}}
-    if args.print_log:
-        output_on_train_end = os.sys.stdout
-    else:
-        output_on_train_end = None
-
-    callbacklist = callbacks.CallbackList(
-        [callbacks.BaseLogger(),
-         callbacks.TQDMCallback(),
-         callbacks.CSVLogger(filename=training_run_dir +
-                             training_run_name + '.csv',
-                             output_on_train_end=output_on_train_end)])
-    callbacklist.set_params(callback_params)
-
-    tensorboard_writer = SummaryWriter(log_dir=training_run_dir,
-                                       comment=args.dataset +
-                                       '_embedding_training')
-
-    # show some image examples in tensorboard projector with inverted color
-    images = 255 - test_dataset.test_data[:100].float()
-    label = test_dataset.test_labels[:100]
-    features = images.view(100, 784)
-    tensorboard_writer.add_embedding(features, metadata=label,
-                                     label_img=images.unsqueeze(1))
-    return tensorboard_writer, callbacklist, train_loader, test_loader
+    train_images = torch.load("../tiny-imagenet-200/train_images")
+    train_labels = torch.load("../tiny-imagenet-200/train_labels")
+    val_images = torch.load("../tiny-imagenet-200/val_images")
+    val_labels = torch.load("../tiny-imagenet-200/val_labels")
+    return train_images, train_labels, val_images, val_labels
 
 
 def chooseModel(model_name='default', droprate=0.5, cuda=True):
@@ -202,13 +139,44 @@ def chooseOptimizer(model, optimizer='sgd'):
     return optimizer
 
 
-def train(model, optimizer, train_loader, tensorboard_writer, callbacklist,
-          epoch, tot_minb_c):
-    # Training
+def train(model, optimizer, train_images, train_labels, num_steps, batch_size):
     model.train()
+    for step in range(num_steps):
+        choice = torch.randperm(train_images.size()[0])[:batch_size]
+        batch_examples = train_images[choice]
+        labels = train_labels[choice]
+        correct_count = np.array(0)
+        if args.cuda:
+            batch_examples, labels = batch_examples.cuda(), labels.cuda()
+        batch_examples, labels = Variable(batch_examples), Variable(labels)
+
+        optimizer.zero_grad()
+
+        # Forward prediction step
+        output = model(batch_examples)
+        loss = F.nll_loss(output, labels)
+
+        # Backpropagation step
+        loss.backward()
+        optimizer.step()
+
+        # The batch has ended, determine the
+        # accuracy of the predicted outputs
+        _, argmax = torch.max(output, 1)
+
+        accuracy = (labels == argmax.squeeze()).float().mean()
+        # get the index of the max log-probability
+        pred = output.data.max(1, keepdim=True)[1]
+        correct_count += pred.eq(labels.data.view_as(pred)).cpu().sum()
+        percent_correct = (correct_count / batch_size) * 100
+        if step % 100 == 0:
+            print("step ",step, ", percent_correct: ", percent_correct, "%,  num_correct: ", correct_count)
+            # print("true: ", labels)
+            # print("pred: ", pred)
+
+    """
     correct_count = np.array(0)
     for batch_idx, (data, target) in enumerate(train_loader):
-        callbacklist.on_batch_begin(batch_idx)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
@@ -266,6 +234,7 @@ def train(model, optimizer, train_loader, tensorboard_writer, callbacklist,
     tensorboard_writer.add_image('images', img,
                                  global_step=tot_minb_c)
     return tot_minb_c
+    """
 
 
 def test(model, test_loader, tensorboard_writer, callbacklist, epoch,
@@ -312,25 +281,22 @@ def run_experiment(args):
         torch.cuda.manual_seed(args.seed)
 
     epochs_to_run = args.epochs
-    tensorboard_writer, callbacklist, train_loader, test_loader \
-        = prepareDatasetAndLogging(args)
+    num_steps = 10000
+    batch_size = 64
+    train_images, train_labels, val_images, val_labels = prepareDatasetAndLogging(args)
     model = chooseModel(args.model)
     if args.load_model != "":
         print("LOADING MODEL: " + args.load_model)
         model.load_state_dict(torch.load(args.load_model))
-    # tensorboard_writer.add_graph(model, images[:2])
     optimizer = chooseOptimizer(model, args.optimizer)
     # Run the primary training loop, starting with validation accuracy of 0
     val_acc = 0
-    callbacklist.on_train_begin()
     for epoch in range(1, epochs_to_run + 1):
-        callbacklist.on_epoch_begin(epoch)
+        # callbacklist.on_epoch_begin(epoch)
         # train for 1 epoch
         if not args.no_train:
-            total_minibatch_count = train(model, optimizer, train_loader,
-                                          tensorboard_writer,
-                                          callbacklist, epoch,
-                                          total_minibatch_count)
+            total_minibatch_count = train(model, optimizer, train_images, train_labels,
+                                          num_steps, batch_size)
         # validate progress on test dataset
         val_acc = test(model, test_loader, tensorboard_writer,
                        callbacklist, epoch, total_minibatch_count)
