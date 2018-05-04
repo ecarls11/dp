@@ -66,6 +66,11 @@ parser.add_argument('--print_log', action='store_true', default=False,
 
 parser.add_argument('--load_model', type=str, default='', metavar='N',
                     help="""A path to a serialized torch model""")
+parser.add_argument('--save_model', action='store_true', default=False,
+                    help='serialize a model')
+
+
+
 
 required = object()
 args = None
@@ -145,7 +150,7 @@ def chooseOptimizer(model, optimizer='sgd'):
 
 
 def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
-    
+
     if args.cuda:
         val_images, val_labels = val_images.cuda(), val_labels.cuda() # setup once for validation
 
@@ -194,7 +199,7 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
             model.eval()
             test_loss = 0
             correct = 0
-            
+
 
 
     """
@@ -320,17 +325,17 @@ def run_experiment(args):
         if not args.no_train:
             total_minibatch_count = train(model, optimizer, train_images, train_labels,
                                           num_steps, batch_size)
+        if args.save_model:
+            torch.save(model, args.model+'.model')
+
         # validate progress on test dataset
         val_acc = test(model, test_loader, tensorboard_writer,
                        callbacklist, epoch, total_minibatch_count)
     callbacklist.on_train_end()
     tensorboard_writer.close()
-    if args.model == "P2Q13UltimateNet":
-        torch.save(model.state_dict(), './q13_save.model' + args.name)
 
-    if args.dataset == 'fashion_mnist' and val_acc > 0.92 and val_acc <= 1.0:
-        print("Congratulations, you beat the Question 13 minimum of 92 with \
-                            ({:.2f}%) validation accuracy!".format(val_acc))
+
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
