@@ -1,0 +1,4 @@
+#!/bin/bash
+
+
+ssh -i ~/.ssh/the_key alex@104.196.119.202
