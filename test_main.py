@@ -150,8 +150,7 @@ def chooseOptimizer(model, optimizer='sgd'):
 
 
 def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
-    if args.cuda:
-        val_images, val_labels = val_images.cuda(), val_labels.cuda()
+    
     val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
 
     with open("../logs/train_" + args.model + ".csv", "w", newline="") as train_file, \
@@ -192,8 +191,8 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
                 correct_count += pred.eq(labels.data.view_as(pred)).cpu().sum()
                 percent_correct = (correct_count / batch_size) * 100
                 if step % 100 == 0:
-                    print("step ",s, ", percent_correct: ", percent_correct, "%,  loss: ", loss.data[0])
-                    train_writer.writerow([accuracy, loss.data[0]])
+                    print("step ",s, ", acc: ", accuracy.data[0], ",  loss: ", loss.data[0])
+                    train_writer.writerow([accuracy.data[0], loss.data[0]])
 
             # Validation Testing
             model.eval()
@@ -202,6 +201,8 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
             choice = torch.randperm(val_images.size()[0])[:500]
             examples = val_images[choice]
             labels = val_labels[choice]
+            if args.cuda:
+                examples, labels = examples.cuda(), labels.cuda()
             output = model(examples)
             test_loss += F.nll_loss(output, labels, size_average=False).data[0]
             pred = output.data.max(1, keepdim=True)[1]
@@ -209,7 +210,8 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
             test_size = examples.size(0)
             test_loss /= test_size
             acc = np.array(correct, np.float32) / test_size
-            val_writer.writerow([acc, test_loss.data[0]])
+            print("validation:  acc: ", acc, "  loss: ", test_loss)
+            val_writer.writerow([acc, test_loss])
             
 
 
@@ -320,7 +322,7 @@ def run_experiment(args):
         torch.cuda.manual_seed(args.seed)
 
     epochs_to_run = args.epochs
-    num_steps = 100
+    num_steps = 10000
     batch_size = 64
     train_images, train_labels, val_images, val_labels = prepareDatasetAndLogging(args)
     model = chooseModel(args.model)
