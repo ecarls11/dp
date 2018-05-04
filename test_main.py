@@ -66,6 +66,11 @@ parser.add_argument('--print_log', action='store_true', default=False,
 
 parser.add_argument('--load_model', type=str, default='', metavar='N',
                     help="""A path to a serialized torch model""")
+parser.add_argument('--save_model', action='store_true', default=False,
+                    help='serialize a model')
+
+
+
 
 required = object()
 args = None
@@ -145,8 +150,6 @@ def chooseOptimizer(model, optimizer='sgd'):
 
 
 def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
-    
-    # setup once for validation
     if args.cuda:
         val_images, val_labels = val_images.cuda(), val_labels.cuda()
     val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
