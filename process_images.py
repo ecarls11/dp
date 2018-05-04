@@ -13,7 +13,11 @@ import torchvision
 import sys
 
 gray = False
+ROTATE=False
 
+
+if len(sys.argv) > 1:
+    ROTATE = True
 
 top_dir = "../tiny-imagenet-200/"
 wnids = top_dir + "wnids.txt"
@@ -26,7 +30,7 @@ val_images_path = top_dir + "val_images" # contains tensor-ized images
 val_labels_path = top_dir + "val_labels" # contains tensor-ized images
 
 image_class_dict = {} # directory name : label (i.e. n03444034 : 35)
-val_counter = {} 
+val_counter = {}
 
 # get name of image directories, fill dict
 all_dirs = []
@@ -43,6 +47,7 @@ with open(wnids) as file:
 
 pil_to_tensor = torchvision.transforms.ToTensor() # convert PIL image to float tensor
 make_gray = torchvision.transforms.Grayscale() # convert PIL image to grayscale PIL image
+y = torchvision.transforms.RandomRotation(360, center=(32,32))
 
 
 
@@ -56,6 +61,8 @@ if gray:
 		for i in range(500):
 			image_file = train_dir + curr_dir + "/images/" + curr_dir + "_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
+            if (ROTATE):
+                im = y(im)
 			train_images[i + offset] = pil_to_tensor(make_gray(im))
 			train_labels[i + offset] = image_class
 		offset += 500
@@ -73,6 +80,8 @@ if gray:
 			i += 1
 			image_file = val_dir + "images/val_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
+            if (ROTATE):
+                im = y(im)
 			dir_name = line.split()[1]
 			label = image_class_dict[dir_name]
 			curr_example = val_counter[dir_name]
@@ -95,6 +104,8 @@ else:
 		for i in range(500):
 			image_file = train_dir + curr_dir + "/images/" + curr_dir + "_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
+            if (ROTATE):
+                im = y(im)
 			im = pil_to_tensor(im)
 			if im.size()[0] == 3:
 				train_images[i + offset] = im
@@ -113,6 +124,8 @@ else:
 			i += 1
 			image_file = val_dir + "images/val_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
+            if (ROTATE):
+                im = y(im)
 			im = pil_to_tensor(im)
 			dir_name = line.split()[1]
 			label = image_class_dict[dir_name]
@@ -124,4 +137,3 @@ else:
 	val_images = (val_images - val_images.mean()) / val_images.std()
 	torch.save(val_images, val_images_path)
 	torch.save(val_labels, val_labels_path)
-
