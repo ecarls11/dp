@@ -16,10 +16,14 @@ from torch.autograd import Variable
 
 import numpy as np
 import sys
+
+import csv
+
 # import callbacks
 
 import minires
 import minig
+
 
 # Training settings
 parser = argparse.ArgumentParser(description='Deep Learning JHU Assignment 1 \
@@ -65,6 +69,7 @@ parser.add_argument('--load_model', type=str, default='', metavar='N',
 
 required = object()
 args = None
+
 
 
 #default class for testing
@@ -139,40 +144,58 @@ def chooseOptimizer(model, optimizer='sgd'):
     return optimizer
 
 
-def train(model, optimizer, train_images, train_labels, num_steps, batch_size):
-    model.train()
-    for step in range(num_steps):
-        choice = torch.randperm(train_images.size()[0])[:batch_size]
-        batch_examples = train_images[choice]
-        labels = train_labels[choice]
-        correct_count = np.array(0)
-        if args.cuda:
-            batch_examples, labels = batch_examples.cuda(), labels.cuda()
-        batch_examples, labels = Variable(batch_examples), Variable(labels)
+def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
+    
+    if args.cuda:
+        val_images, val_labels = val_images.cuda(), val_labels.cuda() # setup once for validation
 
-        optimizer.zero_grad()
+    with open("../logs/train_" + args.model + ".csv", "w", newline="") as train_file, \
+        open ("../logs/val_" + args.model + ".csv", "w", newline="") as val_file:
+        train_writer = csv.writer(train_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+        val_writer = csv.writer(val_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+        s = -1 # step for logging purposes
+        for e in range(10):
+            model.train()
+            print("-------------------- EPOCH ", e, "--------------------")
+            for step in range(num_steps):
+                s += 1
+                choice = torch.randperm(train_images.size()[0])[:batch_size]
+                batch_examples = train_images[choice]
+                labels = train_labels[choice]
+                correct_count = np.array(0)
+                if args.cuda:
+                    batch_examples, labels = batch_examples.cuda(), labels.cuda()
+                batch_examples, labels = Variable(batch_examples), Variable(labels)
 
-        # Forward prediction step
-        output = model(batch_examples)
-        loss = F.nll_loss(output, labels)
+                optimizer.zero_grad()
 
-        # Backpropagation step
-        loss.backward()
-        optimizer.step()
+                # Forward prediction step
+                output = model(batch_examples)
+                loss = F.nll_loss(output, labels)
 
-        # The batch has ended, determine the
-        # accuracy of the predicted outputs
-        _, argmax = torch.max(output, 1)
+                # Backpropagation step
+                loss.backward()
+                optimizer.step()
 
-        accuracy = (labels == argmax.squeeze()).float().mean()
-        # get the index of the max log-probability
-        pred = output.data.max(1, keepdim=True)[1]
-        correct_count += pred.eq(labels.data.view_as(pred)).cpu().sum()
-        percent_correct = (correct_count / batch_size) * 100
-        if step % 100 == 0:
-            print("step ",step, ", percent_correct: ", percent_correct, "%,  num_correct: ", correct_count)
-            # print("true: ", labels)
-            # print("pred: ", pred)
+                # The batch has ended, determine the
+                # accuracy of the predicted outputs
+                _, argmax = torch.max(output, 1)
+
+                accuracy = (labels == argmax.squeeze()).float().mean()
+                # get the index of the max log-probability
+                pred = output.data.max(1, keepdim=True)[1]
+                correct_count += pred.eq(labels.data.view_as(pred)).cpu().sum()
+                percent_correct = (correct_count / batch_size) * 100
+                if step % 100 == 0:
+                    print("step ",s, ", percent_correct: ", percent_correct, "%,  loss: ", loss)
+                    log_writer.writerow([accuracy, loss])
+
+            # Validation Testing
+            model.eval()
+            test_loss = 0
+            correct = 0
+            
+
 
     """
     correct_count = np.array(0)

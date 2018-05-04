@@ -12,7 +12,7 @@ import torch
 import torchvision
 import sys
 
-gray = True
+gray = False
 
 
 top_dir = "../tiny-imagenet-200/"
