@@ -146,15 +146,17 @@ def chooseOptimizer(model, optimizer='sgd'):
 
 def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
     
+    # setup once for validation
     if args.cuda:
-        val_images, val_labels = val_images.cuda(), val_labels.cuda() # setup once for validation
+        val_images, val_labels = val_images.cuda(), val_labels.cuda()
+    val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
 
     with open("../logs/train_" + args.model + ".csv", "w", newline="") as train_file, \
         open ("../logs/val_" + args.model + ".csv", "w", newline="") as val_file:
         train_writer = csv.writer(train_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         val_writer = csv.writer(val_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         s = -1 # step for logging purposes
-        for e in range(10):
+        for e in range(1, 11):
             model.train()
             print("-------------------- EPOCH ", e, "--------------------")
             for step in range(num_steps):
@@ -187,13 +189,24 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
                 correct_count += pred.eq(labels.data.view_as(pred)).cpu().sum()
                 percent_correct = (correct_count / batch_size) * 100
                 if step % 100 == 0:
-                    print("step ",s, ", percent_correct: ", percent_correct, "%,  loss: ", loss)
-                    log_writer.writerow([accuracy, loss])
+                    print("step ",s, ", percent_correct: ", percent_correct, "%,  loss: ", loss.data[0])
+                    train_writer.writerow([accuracy, loss.data[0]])
 
             # Validation Testing
             model.eval()
             test_loss = 0
             correct = 0
+            choice = torch.randperm(val_images.size()[0])[:500]
+            examples = val_images[choice]
+            labels = val_labels[choice]
+            output = model(examples)
+            test_loss += F.nll_loss(output, labels, size_average=False).data[0]
+            pred = output.data.max(1, keepdim=True)[1]
+            correct += pred.eq(labels.data.view_as(pred)).cpu().sum()
+            test_size = examples.size(0)
+            test_loss /= test_size
+            acc = np.array(correct, np.float32) / test_size
+            val_writer.writerow([acc, test_loss.data[0]])
             
 
 
@@ -259,7 +272,7 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
     return tot_minb_c
     """
 
-
+"""
 def test(model, test_loader, tensorboard_writer, callbacklist, epoch,
          total_minibatch_count):
     # Validation Testing
@@ -293,10 +306,10 @@ def test(model, test_loader, tensorboard_writer, callbacklist, epoch,
             100. * correct / len(test_loader.dataset)))
 
     return acc
+"""
 
 
 def run_experiment(args):
-    total_minibatch_count = 0
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
     torch.manual_seed(args.seed)
@@ -304,7 +317,7 @@ def run_experiment(args):
         torch.cuda.manual_seed(args.seed)
 
     epochs_to_run = args.epochs
-    num_steps = 10000
+    num_steps = 100
     batch_size = 64
     train_images, train_labels, val_images, val_labels = prepareDatasetAndLogging(args)
     model = chooseModel(args.model)
@@ -313,24 +326,8 @@ def run_experiment(args):
         model.load_state_dict(torch.load(args.load_model))
     optimizer = chooseOptimizer(model, args.optimizer)
     # Run the primary training loop, starting with validation accuracy of 0
-    val_acc = 0
-    for epoch in range(1, epochs_to_run + 1):
-        # callbacklist.on_epoch_begin(epoch)
-        # train for 1 epoch
-        if not args.no_train:
-            total_minibatch_count = train(model, optimizer, train_images, train_labels,
-                                          num_steps, batch_size)
-        # validate progress on test dataset
-        val_acc = test(model, test_loader, tensorboard_writer,
-                       callbacklist, epoch, total_minibatch_count)
-    callbacklist.on_train_end()
-    tensorboard_writer.close()
-    if args.model == "P2Q13UltimateNet":
-        torch.save(model.state_dict(), './q13_save.model' + args.name)
+    train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size)
 
-    if args.dataset == 'fashion_mnist' and val_acc > 0.92 and val_acc <= 1.0:
-        print("Congratulations, you beat the Question 13 minimum of 92 with \
-                            ({:.2f}%) validation accuracy!".format(val_acc))
 
 if __name__ == '__main__':
     args = parser.parse_args()
