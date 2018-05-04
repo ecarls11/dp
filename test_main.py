@@ -28,7 +28,7 @@ import minig
 # Training settings
 parser = argparse.ArgumentParser(description='Deep Learning JHU Assignment 1 \
                                                             - Fashion-MNIST')
-parser.add_argument('--batch-size', type=int, default=256, metavar='B',
+parser.add_argument('--batch-size', type=int, default=64, metavar='B',
                     help='input batch size for training (default: 64)')
 parser.add_argument('--dropout-rate', type=float, default=50, metavar='DR',
                     help='Dropout rate (probability) (default: 50)')
@@ -158,7 +158,7 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
         train_writer = csv.writer(train_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         val_writer = csv.writer(val_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         s = -1 # step for logging purposes
-        for e in range(1, 11):
+        for e in range(1, args.epochs + 1):
             model.train()
             print("-------------------- EPOCH ", e, "--------------------")
             for step in range(num_steps):
@@ -321,9 +321,8 @@ def run_experiment(args):
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
 
-    epochs_to_run = args.epochs
     num_steps = 10000
-    batch_size = 64
+    batch_size = args.batch_size
     train_images, train_labels, val_images, val_labels = prepareDatasetAndLogging(args)
     model = chooseModel(args.model)
     if args.load_model != "":
