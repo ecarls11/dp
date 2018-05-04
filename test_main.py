@@ -150,7 +150,7 @@ def chooseOptimizer(model, optimizer='sgd'):
 
 
 def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
-    
+
     val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
 
     with open("../logs/train_" + args.model + ".csv", "w", newline="") as train_file, \
@@ -212,7 +212,7 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
             acc = np.array(correct, np.float32) / test_size
             print("validation:  acc: ", acc, "  loss: ", test_loss)
             val_writer.writerow([acc, test_loss])
-            
+
 
 
     """
@@ -332,6 +332,10 @@ def run_experiment(args):
     optimizer = chooseOptimizer(model, args.optimizer)
     # Run the primary training loop, starting with validation accuracy of 0
     train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size)
+
+    if args.save_model:
+        torch.save(model, args.model+".model")
+        
 
 
 if __name__ == '__main__':
