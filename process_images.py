@@ -16,8 +16,7 @@ gray = False
 ROTATE=False
 
 
-if len(sys.argv) > 1:
-    ROTATE = True
+
 
 top_dir = "../tiny-imagenet-200/"
 wnids = top_dir + "wnids.txt"
@@ -43,6 +42,12 @@ with open(wnids) as file:
 		image_class_dict[dir_name] = i
 		val_counter[dir_name] = 0
 
+if len(sys.argv) > 1:
+    ROTATE = True
+	train_images_path = top_dir + "train_images" + ".rotated" # contains tensor-ized images
+	train_labels_path = top_dir + "train_labels" + ".rotated" # contains tensor-ized labels
+	val_images_path = top_dir + "val_images" + ".rotated" # contains tensor-ized images
+	val_labels_path = top_dir + "val_labels" + ".rotated" # contains tensor-ized images
 
 
 pil_to_tensor = torchvision.transforms.ToTensor() # convert PIL image to float tensor
