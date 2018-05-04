@@ -61,8 +61,7 @@ if gray:
 		for i in range(500):
 			image_file = train_dir + curr_dir + "/images/" + curr_dir + "_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
-            if (ROTATE):
-                im = y(im)
+			if ROTATE: im = y(im)
 			train_images[i + offset] = pil_to_tensor(make_gray(im))
 			train_labels[i + offset] = image_class
 		offset += 500
@@ -80,8 +79,8 @@ if gray:
 			i += 1
 			image_file = val_dir + "images/val_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
-            if (ROTATE):
-                im = y(im)
+			if (ROTATE):
+				im = y(im)
 			dir_name = line.split()[1]
 			label = image_class_dict[dir_name]
 			curr_example = val_counter[dir_name]
@@ -104,8 +103,8 @@ else:
 		for i in range(500):
 			image_file = train_dir + curr_dir + "/images/" + curr_dir + "_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
-            if (ROTATE):
-                im = y(im)
+			if (ROTATE):
+				im = y(im)
 			im = pil_to_tensor(im)
 			if im.size()[0] == 3:
 				train_images[i + offset] = im
@@ -124,8 +123,8 @@ else:
 			i += 1
 			image_file = val_dir + "images/val_" + str(i) + ".JPEG"
 			im = Image.open(image_file)
-            if (ROTATE):
-                im = y(im)
+			if (ROTATE):
+				im = y(im)
 			im = pil_to_tensor(im)
 			dir_name = line.split()[1]
 			label = image_class_dict[dir_name]
