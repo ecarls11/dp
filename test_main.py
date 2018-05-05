@@ -355,7 +355,7 @@ def run_experiment(args):
     model = chooseModel(args.model)
     if args.load_model != "":
         print("LOADING MODEL: " + args.load_model)
-        model.load_state_dict(torch.load(args.load_model))
+        model = torch.load(args.load_model)
     if args.no_train:
         test(model, train_images, train_labels, val_images, val_labels)
         return
