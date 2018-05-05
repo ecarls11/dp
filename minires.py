@@ -46,7 +46,7 @@ class MiniRes(nn.Module):
         self.block1 = MiniBlock(16, 16, 16, kernel_size=3, stride=1)
         self.block2 = MiniBlock(16, 16, 32, kernel_size=3, stride=1)
         self.block3 = MiniBlock(32, 32, 64, kernel_size=3, stride=2) 
-        self.block4 = MiniBlock(64, 64, 64, kernel_size=3, stride=2) # output is 64x8x8
+        self.block4 = MiniBlock(64, 64, 64, kernel_size=3, stride=2)
         self.fc1 = nn.Linear(1024, 1000)
 
 

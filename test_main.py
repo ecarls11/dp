@@ -113,10 +113,10 @@ def timeStamped(fname, fmt='%Y-%m-%d-%H-%M-%S_{fname}'):
 
 
 def prepareDatasetAndLogging(args):
-    train_images = torch.load("../tiny-imagenet-200/train_images")
-    train_labels = torch.load("../tiny-imagenet-200/train_labels")
-    val_images = torch.load("../tiny-imagenet-200/val_images")
-    val_labels = torch.load("../tiny-imagenet-200/val_labels")
+    train_images = torch.load("../tiny-imagenet-200/train_images.rotated")
+    train_labels = torch.load("../tiny-imagenet-200/train_labels.rotated")
+    val_images = torch.load("../tiny-imagenet-200/val_images.rotated")
+    val_labels = torch.load("../tiny-imagenet-200/val_labels.rotated")
     return train_images, train_labels, val_images, val_labels
 
 
