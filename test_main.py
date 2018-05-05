@@ -150,30 +150,30 @@ def chooseOptimizer(model, optimizer='sgd'):
 
 
 def test(model, train_images, train_labels, val_images, val_labels):
-	val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
+    val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
 
     with open("../logs/test_" + args.model + ".csv", "w", newline="") as train_file:
         train_writer = csv.writer(train_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         val_writer = csv.writer(val_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
 
-		# Validation Testing
-		model.eval()
-		test_loss = 0
-		correct = 0
-		choice = torch.randperm(val_images.size()[0])[:500]
-		examples = val_images[choice]
-		labels = val_labels[choice]
-		if args.cuda:
-			examples, labels = examples.cuda(), labels.cuda()
-		output = model(examples)
-		test_loss += F.nll_loss(output, labels, size_average=False).data[0]
-		pred = output.data.max(1, keepdim=True)[1]
-		correct += pred.eq(labels.data.view_as(pred)).cpu().sum()
-		test_size = examples.size(0)
-		test_loss /= test_size
-		acc = np.array(correct, np.float32) / test_size
-		print("validation:  acc: ", acc, "  loss: ", test_loss)
-		val_writer.writerow([acc, test_loss])
+        # Validation Testing
+        model.eval()
+        test_loss = 0
+        correct = 0
+        choice = torch.randperm(val_images.size()[0])[:500]
+        examples = val_images[choice]
+        labels = val_labels[choice]
+        if args.cuda:
+            examples, labels = examples.cuda(), labels.cuda()
+        output = model(examples)
+        test_loss += F.nll_loss(output, labels, size_average=False).data[0]
+        pred = output.data.max(1, keepdim=True)[1]
+        correct += pred.eq(labels.data.view_as(pred)).cpu().sum()
+        test_size = examples.size(0)
+        test_loss /= test_size
+        acc = np.array(correct, np.float32) / test_size
+        print("validation:  acc: ", acc, "  loss: ", test_loss)
+        val_writer.writerow([acc, test_loss])
 
 
 
@@ -356,9 +356,9 @@ def run_experiment(args):
     if args.load_model != "":
         print("LOADING MODEL: " + args.load_model)
         model.load_state_dict(torch.load(args.load_model))
-	if args.no_train:
-		test(model, train_images, train_labels, val_images, val_labels)
-		return
+    if args.no_train:
+        test(model, train_images, train_labels, val_images, val_labels)
+        return
     optimizer = chooseOptimizer(model, args.optimizer)
     # Run the primary training loop, starting with validation accuracy of 0
     train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size)
