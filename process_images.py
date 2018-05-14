@@ -11,6 +11,7 @@ from PIL import Image
 import torch
 import torchvision
 import sys
+import random
 
 gray = False
 ROTATE=False
@@ -53,8 +54,8 @@ if len(sys.argv) > 1:
 pil_to_tensor = torchvision.transforms.ToTensor() # convert PIL image to float tensor
 make_gray = torchvision.transforms.Grayscale() # convert PIL image to grayscale PIL image
 y = torchvision.transforms.RandomRotation(360, center=(32,32))
-hflip = torchvision.transforms.RandomHorizontalFlip(0.5)
-vlfip = torchvision.transforms.RandomVerticalFlip(0.5)
+hflip = torchvision.transforms.RandomHorizontalFlip()
+vflip = torchvision.transforms.RandomVerticalFlip()
 
 
 if gray:
