@@ -53,7 +53,8 @@ if len(sys.argv) > 1:
 pil_to_tensor = torchvision.transforms.ToTensor() # convert PIL image to float tensor
 make_gray = torchvision.transforms.Grayscale() # convert PIL image to grayscale PIL image
 y = torchvision.transforms.RandomRotation(360, center=(32,32))
-
+hflip = torchvision.transforms.RandomHorizontalFlip(0.5)
+vlfip = torchvision.transforms.RandomVerticalFlip(0.5)
 
 
 if gray:
@@ -108,8 +109,13 @@ else:
         for i in range(500):
             image_file = train_dir + curr_dir + "/images/" + curr_dir + "_" + str(i) + ".JPEG"
             im = Image.open(image_file)
-            if (ROTATE):
+            if random.random() >= 0.5:
                 im = y(im)
+            if random.random() >= 0.5:
+                k = torchvision.transforms.ColorJitter(random.random(), random.random(), random.random(), random.random()*0.5)
+                im = k(im)
+            im = hflip(im)
+            im = vflip(im)
             im = pil_to_tensor(im)
             if im.size()[0] == 3:
                 train_images[i + offset] = im
@@ -128,8 +134,6 @@ else:
             i += 1
             image_file = val_dir + "images/val_" + str(i) + ".JPEG"
             im = Image.open(image_file)
-            if (ROTATE):
-                im = y(im)
             im = pil_to_tensor(im)
             dir_name = line.split()[1]
             label = image_class_dict[dir_name]
