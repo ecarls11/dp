@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import pathlib
 import argparse
 import datetime
 import six
@@ -28,7 +29,7 @@ import minig
 # Training settings
 parser = argparse.ArgumentParser(description='Deep Learning JHU Assignment 1 \
                                                             - Fashion-MNIST')
-parser.add_argument('--batch-size', type=int, default=256, metavar='B',
+parser.add_argument('--batch-size', type=int, default=64, metavar='B',
                     help='input batch size for training (default: 64)')
 parser.add_argument('--dropout-rate', type=float, default=50, metavar='DR',
                     help='Dropout rate (probability) (default: 50)')
@@ -39,7 +40,7 @@ parser.add_argument('--epochs', type=int, default=10, metavar='E',
 parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                     help='learning rate (default: 0.01)')
 parser.add_argument('--optimizer', type=str, default='sgd', metavar='O',
-                    help='Optimizer options are sgd, p1sgd, adam, rms_prop')
+                    help='Optimizer options are sgd, p1sgd, adam, rmsprop')
 parser.add_argument('--momentum', type=float, default=0.5, metavar='MO',
                     help='SGD momentum (default: 0.5)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -69,9 +70,12 @@ parser.add_argument('--load_model', type=str, default='', metavar='N',
 parser.add_argument('--save_model', action='store_true', default=False,
                     help='serialize a model')
 
+parser.add_argument('--steps', type=int, default=10000, metavar='S',
+                    help='number of steps per epoch (default 10000)')
 
 
 
+log_dir = ""
 required = object()
 args = None
 
@@ -141,24 +145,52 @@ def chooseOptimizer(model, optimizer='sgd'):
         optimizer = optim.SGD(model.parameters(), lr=args.lr,
                               momentum=args.momentum)
     elif optimizer == 'adam':
-        optimizer = optim.Adam(model.parameters())
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
     elif optimizer == 'rmsprop':
-        optimizer = optim.RMSprop(model.parameters())
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr)
     else:
         raise ValueError('Unsupported optimizer: ' + args.optimizer)
     return optimizer
+
+
+def test(model, train_images, train_labels, val_images, val_labels):
+    val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
+
+    with open("../logs/test_" + args.model + ".csv", "w", newline="") as train_file:
+        train_writer = csv.writer(train_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+        val_writer = csv.writer(val_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+
+        # Validation Testing
+        model.eval()
+        test_loss = 0
+        correct = 0
+        choice = torch.randperm(val_images.size()[0])[:500]
+        examples = val_images[choice]
+        labels = val_labels[choice]
+        if args.cuda:
+            examples, labels = examples.cuda(), labels.cuda()
+        output = model(examples)
+        test_loss += F.nll_loss(output, labels, size_average=False).data[0]
+        pred = output.data.max(1, keepdim=True)[1]
+        correct += pred.eq(labels.data.view_as(pred)).cpu().sum()
+        test_size = examples.size(0)
+        test_loss /= test_size
+        acc = np.array(correct, np.float32) / test_size
+        print("validation:  acc: ", acc, "  loss: ", test_loss)
+        val_writer.writerow([acc, test_loss])
+
 
 
 def train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size):
 
     val_images, val_labels = Variable(val_images, volatile=True), Variable(val_labels)
 
-    with open("../logs/train_" + args.model + ".csv", "w", newline="") as train_file, \
-        open ("../logs/val_" + args.model + ".csv", "w", newline="") as val_file:
+    with open(log_dir + "/train.csv", "w", newline="") as train_file, \
+        open (log_dir + "/val.csv", "w", newline="") as val_file:
         train_writer = csv.writer(train_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         val_writer = csv.writer(val_file, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         s = -1 # step for logging purposes
-        for e in range(1, 11):
+        for e in range(1, args.epochs + 1):
             model.train()
             print("-------------------- EPOCH ", e, "--------------------")
             for step in range(num_steps):
@@ -190,128 +222,26 @@ def train(model, optimizer, train_images, train_labels, val_images, val_labels, 
                 pred = output.data.max(1, keepdim=True)[1]
                 correct_count += pred.eq(labels.data.view_as(pred)).cpu().sum()
                 percent_correct = (correct_count / batch_size) * 100
-                if step % 100 == 0:
-                    print("step ",s, ", acc: ", accuracy.data[0], ",  loss: ", loss.data[0])
+                if step % 500 == 0:
+                    print("step ",s,':')
+                    print("train:  acc: ", accuracy.data[0], ",  loss: ", loss.data[0])
                     train_writer.writerow([accuracy.data[0], loss.data[0]])
 
-            # Validation Testing
-            model.eval()
-            test_loss = 0
-            correct = 0
-            choice = torch.randperm(val_images.size()[0])[:500]
-            examples = val_images[choice]
-            labels = val_labels[choice]
-            if args.cuda:
-                examples, labels = examples.cuda(), labels.cuda()
-            output = model(examples)
-            test_loss += F.nll_loss(output, labels, size_average=False).data[0]
-            pred = output.data.max(1, keepdim=True)[1]
-            correct += pred.eq(labels.data.view_as(pred)).cpu().sum()
-            test_size = examples.size(0)
-            test_loss /= test_size
-            acc = np.array(correct, np.float32) / test_size
-            print("validation:  acc: ", acc, "  loss: ", test_loss)
-            val_writer.writerow([acc, test_loss])
+                    # Validation Testing
+                    model.eval()
+                    correct = 0
+                    choice = torch.randperm(val_images.size()[0])[:1000]
+                    examples = val_images[choice]
+                    labels = val_labels[choice]
+                    if args.cuda:
+                        examples, labels = examples.cuda(), labels.cuda()
+                    output = model(examples)
+                    test_loss = F.nll_loss(output, labels)
+                    _, argmax = torch.max(output, 1)
+                    acc = (labels == argmax.squeeze()).float().mean()
+                    print("validation:  acc: ", acc.data[0], "  loss: ", test_loss.data[0])
+                    val_writer.writerow([acc.data[0], test_loss.data[0]])
 
-
-
-    """
-    correct_count = np.array(0)
-    for batch_idx, (data, target) in enumerate(train_loader):
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-        optimizer.zero_grad()
-
-        # Forward prediction step
-        output = model(data)
-        loss = F.nll_loss(output, target)
-
-        # Backpropagation step
-        loss.backward()
-        optimizer.step()
-
-        # The batch has ended, determine the
-        # accuracy of the predicted outputs
-        _, argmax = torch.max(output, 1)
-
-        # target labels and predictions are
-        # categorical values from 0 to 9.
-        accuracy = (target == argmax.squeeze()).float().mean()
-        # get the index of the max log-probability
-        pred = output.data.max(1, keepdim=True)[1]
-        correct_count += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-        batch_logs = {
-            'loss': np.array(loss.data[0]),
-            'acc': np.array(accuracy.data[0]),
-            'size': np.array(len(target))
-        }
-
-        batch_logs['batch'] = np.array(batch_idx)
-        callbacklist.on_batch_end(batch_idx, batch_logs)
-
-        if args.log_interval != 0 and tot_minb_c % args.log_interval == 0:
-            # put all the logs in tensorboard
-            for name, value in six.iteritems(batch_logs):
-                tensorboard_writer.add_scalar(name, value,
-                                              global_step=tot_minb_c)
-
-            # put all the parameters in tensorboard histograms
-            for name, param in model.named_parameters():
-                name = name.replace('.', '/')
-                tensorboard_writer.add_histogram(name,
-                                                 param.data.cpu().numpy(),
-                                                 global_step=tot_minb_c)
-                tensorboard_writer.add_histogram(name + '/gradient',
-                                                 param.grad.data.cpu().numpy(),
-                                                 global_step=tot_minb_c)
-
-        tot_minb_c += 1
-
-    # display the last batch of images in tensorboard
-    img = torchvision.utils.make_grid(255 - data.data, normalize=True,
-                                      scale_each=True)
-    tensorboard_writer.add_image('images', img,
-                                 global_step=tot_minb_c)
-    return tot_minb_c
-    """
-
-"""
-def test(model, test_loader, tensorboard_writer, callbacklist, epoch,
-         total_minibatch_count):
-    # Validation Testing
-    model.eval()
-    test_loss = 0
-    correct = 0
-    progress_bar = tqdm(test_loader, desc='Validation')
-    for data, target in progress_bar:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
-        output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0]
-        pred = output.data.max(1, keepdim=True)[1]
-        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-    test_size = np.array(len(test_loader.dataset), np.float32)
-    test_loss /= test_size
-
-    acc = np.array(correct, np.float32) / test_size
-    epoch_logs = {'val_loss': np.array(test_loss),
-                  'val_acc': np.array(acc)}
-    for name, value in six.iteritems(epoch_logs):
-        tensorboard_writer.add_scalar(name, value,
-                                      global_step=total_minibatch_count)
-    callbacklist.on_epoch_end(epoch, epoch_logs)
-    progress_bar.write(
-        'Epoch: {} - validation test results - Average val_loss: {:.4f}, \
-                                            val_acc: {}/{} ({:.2f}%)'.format(
-            epoch, test_loss, correct, len(test_loader.dataset),
-            100. * correct / len(test_loader.dataset)))
-
-    return acc
-"""
 
 
 def run_experiment(args):
@@ -321,24 +251,28 @@ def run_experiment(args):
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
 
-    epochs_to_run = args.epochs
-    num_steps = 10000
-    batch_size = 64
+    num_steps = args.steps
+    batch_size = args.batch_size
     train_images, train_labels, val_images, val_labels = prepareDatasetAndLogging(args)
     model = chooseModel(args.model)
     if args.load_model != "":
         print("LOADING MODEL: " + args.load_model)
-        model.load_state_dict(torch.load(args.load_model))
+        model = torch.load(args.load_model)
+    if args.no_train:
+        test(model, train_images, train_labels, val_images, val_labels)
+        return
     optimizer = chooseOptimizer(model, args.optimizer)
     # Run the primary training loop, starting with validation accuracy of 0
     train(model, optimizer, train_images, train_labels, val_images, val_labels, num_steps, batch_size)
 
     if args.save_model:
-        torch.save(model, args.model+".model")
-        
+        torch.save(model, log_dir + "/" + args.model + ".model")
+
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
+    log_dir = "../logs/" + args.model + "_" + args.optimizer + "_" + str(args.lr)
+    pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)
     # Run the primary training and validation loop
     run_experiment(args)
