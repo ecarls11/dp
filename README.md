@@ -7,24 +7,6 @@ Presentation: <b>May 15th</b>
 Writeup: <b>May 5th</b>
 
 
-TODO
-======
-
-* <s>Build a bullshit midterm report</s>
-
-
-* Read in image net data as grayscale.
-* <s>Implement tiny vggnet.</s>
-* <s>Implement tiny resnet.</s>
-    * Figure out if dropout is needed or not
-* Decide on a Faster-RCNN implementation to rip off
-    * One possible Faster-RCNN: https://github.com/chenyuntc/simple-faster-rcnn-pytorch/tree/master/model
-    * Another we've been considering: https://github.com/jwyang/faster-rcnn.pytorch
-* Decide if RNN is actually a viable path (include recurrent aspects in vgg or resnet)
-* Look into grayscale conversion
-* Determine how to handle example images that are 1-D.
-
-
 Notes
 =====
 
@@ -43,5 +25,5 @@ note: in minivgg modify convolutions to have zero padding to keep dimenesionalit
 
 For creating own dataset, and for creating torch tensor from PIL image, use torchvision.transforms stuff.
 
-For viewing rgb images, matplotlib expects MxNx3 input. 
+For viewing rgb images, matplotlib expects MxNx3 input.
 Example: image is saved as 3x64x64 tensor. Matplotlib requires plt.imshow(image.permute(1,2,0).numpy()) (and followed by plt.show()) to view the image.
