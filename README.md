@@ -10,7 +10,6 @@ Writeup: <b>May 5th</b>
 Notes
 =====
 
-Faster-RCNN paper: https://arxiv.org/pdf/1506.01497.pdf
 VGG paper: https://arxiv.org/pdf/1409.1556.pdf
 Resnet paper: https://arxiv.org/pdf/1512.03385.pdf
 
